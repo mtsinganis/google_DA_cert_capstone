@@ -1,6 +1,6 @@
 ![Logo](https://raw.githubusercontent.com/labwilliam/data_analysis_projects/main/cyclistic_bike_share/scripts/logo.png)
 
-<img src="https://raw.githubusercontent.com/labwilliam/data_analysis_projects/main/cyclistic_bike_share/scripts/logo.png" width="20%" height="20%" />
+<img src="https://raw.githubusercontent.com/labwilliam/data_analysis_projects/main/cyclistic_bike_share/scripts/logo.png" width="30%" height="30%" />
 
 # Case Study: How Does a Bike-Share Navigate Speedy Success?
 
