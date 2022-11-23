@@ -47,4 +47,4 @@ invisible(sapply(zip_file_path,
                                    exdir = here("raw_data"))))
 
 # Delete all .zip files from subfolder, keeping only the .csv files
-sapply(zip_file_path, function(m) unlink(m))
+invisible(sapply(zip_file_path, function(m) unlink(m)))
