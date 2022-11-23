@@ -1,5 +1,7 @@
 ![Logo](https://raw.githubusercontent.com/labwilliam/data_analysis_projects/main/cyclistic_bike_share/scripts/logo.png)
 
+<img src="https://raw.githubusercontent.com/labwilliam/data_analysis_projects/main/cyclistic_bike_share/scripts/logo.png" width="20%" height="20%" />
+
 # Case Study: How Does a Bike-Share Navigate Speedy Success?
 
 The Cyclistic bike-share analysis case study is the final requirement for the completion of Google's Data Analytics Professional Certificate. It is meant as an exercise for junior data analysts to perform real-world tasks and familiarize themselves with the complete data analysis process.
