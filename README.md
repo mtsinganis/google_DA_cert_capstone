@@ -22,10 +22,12 @@ How do annual members and casual riders use Cyclistic bikes differently?
 
 ### Deliverables
 
-Top three recommendations to increase to maximize the number of annual memberships based on compelling data insights and data visualizations. \## Authors
+Top three recommendations to increase to maximize the number of annual memberships based on compelling data insights and data visualizations. 
+
+## Authors
 
 -   [\@mtsinganis](https://www.github.com/mtsinganis)
 
-## Documentation {#documentation}
+## Documentation
 
 [Case Study packet](https://d3c33hcgiwev3.cloudfront.net/aacF81H_TsWnBfNR_x7FIg_36299b28fa0c4a5aba836111daad12f1_DAC8-Case-Study-1.pdf?Expires=1669334400&Signature=FZKGH7If4pzvACh9TVFbJHSZPJDwM24uRyXawlx6esW5U5GjQL6lWvzNONpfUYfXFYjg-SA5SQcZyx-GZk3ToQME3PNDff5DSCa0hY8HvO1ZZc6exeWIaVXR3vWfgwEzQOYrBa5-QYoAYnJZNLl1Q3KS9lXRDcs7XUfFMGwb0uA_&Key-Pair-Id=APKAJLTNE6QMUY6HBC5A)
