@@ -17,13 +17,7 @@ library(here)    # here() function for path specification
 
 
 #######################################
-# 1 - Source function
-#######################################
-source(file = "01_make_file_names.R")
-
-
-#######################################
-# 2 - Code
+# 1 - Code
 #######################################
 # Generate list of .zip files to be downloaded based on desired date range
 file_list <- make_file_names("202111-202210")
