@@ -48,11 +48,14 @@ A brief look at the file sizes suggests that importing these into RStudio and co
 -   How does it help you answer your question?
 -   Are there any problems with the data?
 
+Load required packages
+
 ```{r load libraries}
 library(dplyr)
 library(here)
 library(stringr)
 library(tidyr)
+library(readr)
 ```
 
 
@@ -64,13 +67,18 @@ csv_sizes <- tibble(file = list.files(here("raw_data")),
 
 library(ggplot2)
 library(stringr)
+
+my_labels <- sapply(csv_sizes$file, function(m) str_replace(m,
+                                                pattern = "(.{4})(.{2})(.*)",
+                                                replacement = paste("\\1-\\2")))
+
 csv_sizes %>% 
     ggplot(aes(x = file, y = size_mb, group = 1)) + geom_line() +
     labs(title = paste0("Total size of files is ",
                         csv_sizes %>% summarize(round(sum(size_mb), 0)) %>% 
                             pull(), " MB")) +
     theme(axis.text.x = element_text(angle = 45)) +
-    scale_x_discrete(labels = str_sub(csv_sizes$file, 1, 6))
+    scale_x_discrete(labels = my_labels)
 
 
 ```
