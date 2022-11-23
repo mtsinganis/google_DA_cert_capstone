@@ -2,7 +2,7 @@
 
 # Case Study: How Does a Bike-Share Navigate Speedy Success?
 
-The Cyclistic bike-share analysis case study is the final requirement for the completion of Google's Data Analytics Professional Certificate. It is meant as an exercise for junior data analysts to perform real-world tasks and familiarize themselves with the complete data analysis process.
+The Cyclistic bike-share analysis case study is the final requirement for the completion of Google's Data Analytics Professional Certificate. It is a fictional case study meant as an exercise for junior data analysts to perform real-world tasks and familiarize themselves with the complete data analysis process.
 
 ## Case study scenario
 
@@ -14,7 +14,8 @@ The full details of the scenario can be found [here](https://d3c33hcgiwev3.cloud
 
 ### Business task
 
-Maximize the number of annual members by converting casual riders (single-ride and full-day passes) to members (annual membership).
+Maximize the number of annual members by converting casual riders (single-ride and 
+full-day passes) to annual members (annual membership).
 
 ### Data Analysis Goal
 
@@ -22,7 +23,8 @@ How do annual members and casual riders use Cyclistic bikes differently?
 
 ### Deliverables
 
-Top three recommendations to increase to maximize the number of annual memberships based on compelling data insights and data visualizations. 
+A report with the top three recommendations to increase to maximize the number of
+annual memberships based on compelling data insights and data visualizations. 
 
 ## Authors
 
