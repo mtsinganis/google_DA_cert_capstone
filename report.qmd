@@ -7,38 +7,80 @@ editor: visual
 
 ## 1. Ask
 
-Financial analysts at Cyclistic have determined that annual members are more profitable than casual riders. The director of marketing believes future growth depends on maximizing the number of annual members. Our business problem is how to convince more potential clients to purchase an annual membership, rather than use our services for casual rides. In order to solve this business problem we need to design a new marketing strategy that will be informed by trends in the historical bike trip data. The current report has the following business task:
+Financial analysts at Cyclistic have determined that annual members are more profitable than casual riders. The director of marketing believes future growth depends on maximizing the number of annual members. The overarching business task can be stated as follows:
 
-**How do annual members and casual riders use Cyclistic bikes differently?**
+**Business task**: Maximize the number of annual members by converting casual riders (single-ride and full-day passes) to annual members (annual membership).
+
+In order to solve this business problem we need to design a new marketing strategy that will be informed by trends in the historical bike trip data. As a junior data analyst I have been asked to focus on one of the questions guiding the future marketing program:
+
+**Data analysis goal**: How do annual members and casual riders use Cyclistic bikes differently?
 
 ### Key stakeholders
 
+The key stakeholders in this project are:
+
+-   **Cyclistic executive team**: They will decide whether to approve the recommended marketing program
+
+-   **Lily Moreno (director of marketing and my manager)**: She is responsible for the development of campaigns and initiatives to promote the bike-share program and will need my recommendations to help her design a successful new marketing campaign to generate new annual memberships
+
 ## 2. Prepare
 
-I will be using [Cyclistic's historical trip data](https://divvy-tripdata.s3.amazonaws.com/index.html) that have been made available by Motivate International Inc. under this [license](https://ride.divvybikes.com/data-license-agreement). The license includes the right to "access, reproduce, analyze, copy, modify, distribute in your product or service and use the Data for any lawful purpose". The bike trip data is organized in a directory containing zipped .csv files. Based on the file names we can deduce that they cover the period 2013 to 2022, with data from the last two years being published on a monthly basis. I will limit myself to the data from the most recent 12 months available (November 2021 - October 2022). The files in this time range use a consistent naming format ('YYYYMM-divvy-tripdata.zip') which makes it easy to download the files programmatically. As a result, I need to download 12 .zip files containing 12 separate .csv files.
+This fictional case involves Chicago-area bike ride share program [Divvy](https://divvybikes.com/). Divvy's [historical trip data](https://divvy-tripdata.s3.amazonaws.com/index.html) have been made available by Motivate International Inc. under this [license](https://ride.divvybikes.com/data-license-agreement), which includes the right to "access, reproduce, analyze, copy, modify, distribute in your product or service and use the Data for any lawful purpose".
 
-A brief look at the file sizes suggests that importing these into RStudio and combining them in one dataframe can potentially crash the program or slow it down considerably. I therefore choose to avoid importing all the data in RStudio, but instead download the .csv files in my computer and save them as separate tables in a new SQLite database. I then use R to send SQL queries to the database to retrieve only the data I need for a particular analysis.
-
--   Where is your data located?
--   How is the data organized?
--   Are there issues with bias or credibility in this data? Does your data ROCCC?
--   How are you addressing licensing, privacy, security, and accessibility?
--   How did you verify the data's integrity?
--   How does it help you answer your question?
--   Are there any problems with the data?
+The data is organized in a directory containing zipped .csv files. Based on the file names we can deduce that they cover the period 2013 to 2022, with data from the last two years being published on a monthly basis. I will limit myself to the data from the most recent 12 months available (November 2021 - October 2022). The files in this time range use a consistent naming format ('YYYYMM-divvy-tripdata.zip'), making it easy to download the files programmatically. I use a custom R script to download the 12 .zip files and extract the 12 .csv files of interest. The files are placed in a subfolder of the main directory called `raw_data`.
 
 Load required packages
 
 ```{r load libraries}
-library(dplyr)
-library(here)
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(here))
 library(stringr)
 library(tidyr)
 library(readr)
+suppressPackageStartupMessages(library(lubridate))
+```
+
+Source function and script to programmatically download and extract files
+
+```{r source scripts to download and extract .csv files}
+#source("01_make_file_names_function.R")
+#source("02_extract_csv_files.R")
+```
+
+```{r import data and combine in one tibble}
+# create vector of .csv files to import
+temp <- list.files(here("raw_data"), pattern="*.csv")
+
+# import all .csv files as data frames and store them in a list
+trips <- lapply(file.path(here("raw_data"), temp), read_csv)
+
+# extract date from file names and name data frames in the format 'yyyy_mm'
+names(trips) <- sapply(temp, function(m) str_replace(m,
+                                                pattern = "(.{4})(.{2})(.*)",
+                                                replacement = paste("\\1_\\2")))
+
+# bind all data frames of list by row (stack) and add new column 'yyyy_mm'
+# linking each row to its original data frame
+trips <- bind_rows(trips, .id = "yyyy_mm")
+
+ym(trips$yyyy_mm[1])
+
+trips <- trips %>% 
+           separate(yyyy_mm,
+                    into = c("year", "month"),
+                    sep = "_",
+                    remove = FALSE
+                    convert = TRUE)
+
+trips %>% summarise(n = n())
 ```
 
 
-```{r}
+
+
+A brief look at the file sizes suggests that importing these into RStudio and combining them in one dataframe can potentially crash the program or slow it down considerably. I therefore choose to avoid importing all the data in RStudio, but instead download the .csv files in my computer and save them as separate tables in a new SQLite database. I then use R to send SQL queries to the database to retrieve only the data I need for a particular analysis.
+
+```{r plot .csv file sizes by month}
 csv_sizes <- tibble(file = list.files(here("raw_data")),
                     size = file.size(list.files(here("raw_data"),
                                                 full.names = TRUE))) %>% 
@@ -61,8 +103,6 @@ csv_sizes %>%
 
 
 ```
-
-
 
 ## 3. Process
 
