@@ -58,22 +58,52 @@ trips <- lapply(file.path(here("raw_data"), temp), read_csv)
 names(trips) <- sapply(temp, function(m) str_replace(m,
                                                 pattern = "(.{4})(.{2})(.*)",
                                                 replacement = paste("\\1_\\2")))
+```
 
+Before I combine all the data frames into one, I need to confirm whether they have same number of columns and identical column names.
+
+```{r}
+sapply(trips, ncol)
+```
+All data frames have 13 columns.
+
+```{r}
+sapply(lapply(trips, colnames), identical, colnames(trips[[1]]))
+```
+They also have identical column names. This allows me to combine them by row in one large data frame (essentially stacking them).
+
+```{r}
 # bind all data frames of list by row (stack) and add new column 'yyyy_mm'
 # linking each row to its original data frame
 trips <- bind_rows(trips, .id = "yyyy_mm")
 
-ym(trips$yyyy_mm[1])
+#ym(trips$yyyy_mm[1]) # convert to date
 
+# separate 'yyyy_mm' column into 'year' and 'month' columns
 trips <- trips %>% 
            separate(yyyy_mm,
                     into = c("year", "month"),
                     sep = "_",
-                    remove = FALSE
+                    remove = FALSE,
                     convert = TRUE)
-
-trips %>% summarise(n = n())
 ```
+
+I now check how many bike trips were registered by month.
+
+```{r}
+trips %>%
+    group_by(yyyy_mm, member_casual) %>% 
+    summarise(n = n()) %>% 
+    ggplot(aes(x = yyyy_mm, y = n)) + geom_line(aes(group = member_casual)) +
+    theme(axis.text.x = element_text(angle = 90))
+
+```
+The number of bike trips shows clear seasonality, suggesting bike usage is
+highly dependent on weather.
+
+
+
+
 
 
 
