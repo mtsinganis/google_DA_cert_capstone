@@ -27,58 +27,63 @@ The key stakeholders in this project are:
 
 This fictional case involves Chicago-area bike ride share program [Divvy](https://divvybikes.com/). Divvy's [historical trip data](https://divvy-tripdata.s3.amazonaws.com/index.html) have been made available by Motivate International Inc. under this [license](https://ride.divvybikes.com/data-license-agreement), which includes the right to "access, reproduce, analyze, copy, modify, distribute in your product or service and use the Data for any lawful purpose".
 
-The data is organized in a directory containing zipped .csv files. Based on the file names we can deduce that they cover the period 2013 to 2022, with data from the last two years being published on a monthly basis. I will limit myself to the data from the most recent 12 months available (November 2021 - October 2022). The files in this time range use a consistent naming format ('YYYYMM-divvy-tripdata.zip'), making it easy to download the files programmatically. I use a custom R script to download the 12 .zip files and extract the 12 .csv files of interest. The files are placed in a subfolder of the main directory called `raw_data`.
+The data is organized in a directory containing zipped `.csv` files. Based on the file names I can deduce that they cover the period from 2013 to 2022. I will limit myself to the data from the most recent 12 months available (November 2021 - October 2022). The files in this time range use a consistent naming format ('YYYYMM-divvy-tripdata.zip'), making it easy to download the files programmatically. I use two R scripts to download the 12 `.zip` files and extract the 12 `.csv` files of interest. These are placed in a sub-folder of the main directory called `raw_data`.
 
-Load required packages
+Loading required packages:
 
-```{r load libraries}
-suppressPackageStartupMessages(library(dplyr))
+```{r load packages, output = FALSE}
+library(dplyr)
 suppressPackageStartupMessages(library(here))
 library(stringr)
 library(tidyr)
 library(readr)
-suppressPackageStartupMessages(library(lubridate))
+library(ggplot2)
 ```
 
-Source function and script to programmatically download and extract files
+I source the scripts `01_make_file_names_function.R` and `02_extract_csv_files.R` to programmatically download and extract the files:
 
-```{r source scripts to download and extract .csv files}
+```{r source-scripts-to-download-and-extract-csv-files}
 #source("01_make_file_names_function.R")
 #source("02_extract_csv_files.R")
 ```
 
-```{r import data and combine in one tibble}
+Once the 12 `.csv` files are extracted and saved in the `raw_data` sub-folder I import them as data frames and save them in a list:
+
+```{r import data, cache = TRUE}
 # create vector of .csv files to import
 temp <- list.files(here("raw_data"), pattern="*.csv")
 
-# import all .csv files as data frames and store them in a list
+# import all .csv files as data frames and store them in a list called 'trips'
 trips <- lapply(file.path(here("raw_data"), temp), read_csv)
 
 # extract date from file names and name data frames in the format 'yyyy_mm'
 names(trips) <- sapply(temp, function(m) str_replace(m,
                                                 pattern = "(.{4})(.{2})(.*)",
                                                 replacement = paste("\\1_\\2")))
+
+# get a glimpse of the list
+glimpse(trips[1:2])
 ```
 
 Before I combine all the data frames into one, I need to confirm whether they have same number of columns and identical column names.
 
-```{r}
+```{r get-number-of-columns}
 sapply(trips, ncol)
 ```
 All data frames have 13 columns.
 
-```{r}
+```{r check-if-same-column-names}
 sapply(lapply(trips, colnames), identical, colnames(trips[[1]]))
 ```
-They also have identical column names. This allows me to combine them by row in one large data frame (essentially stacking them).
+They also have identical column names. This allows me to combine them (stack them) by row in one large data frame.
 
-```{r}
+```{r combine-dataframes, cache = TRUE}
 # bind all data frames of list by row (stack) and add new column 'yyyy_mm'
 # linking each row to its original data frame
 trips <- bind_rows(trips, .id = "yyyy_mm")
+```
 
-#ym(trips$yyyy_mm[1]) # convert to date
-
+```{r separate-yyyy_mm-column, cache = TRUE}
 # separate 'yyyy_mm' column into 'year' and 'month' columns
 trips <- trips %>% 
            separate(yyyy_mm,
@@ -88,21 +93,17 @@ trips <- trips %>%
                     convert = TRUE)
 ```
 
-I now check how many bike trips were registered by month.
+I now check how many bike trips were registered per month.
 
-```{r}
+```{r plot-trips-per-month}
 trips %>%
-    group_by(yyyy_mm, member_casual) %>% 
+    group_by(yyyy_mm) %>% 
     summarise(n = n()) %>% 
-    ggplot(aes(x = yyyy_mm, y = n)) + geom_line(aes(group = member_casual)) +
+    ggplot(aes(x = yyyy_mm, y = n, group = 1)) + geom_line(color = "blue") +
     theme(axis.text.x = element_text(angle = 90))
 
 ```
-The number of bike trips shows clear seasonality, suggesting bike usage is
-highly dependent on weather.
-
-
-
+The number of bike trips shows clear seasonality, with a peak in July and a trough in January, suggesting bike usage is highly dependent on general weather conditions.
 
 
 
@@ -111,25 +112,25 @@ highly dependent on weather.
 A brief look at the file sizes suggests that importing these into RStudio and combining them in one dataframe can potentially crash the program or slow it down considerably. I therefore choose to avoid importing all the data in RStudio, but instead download the .csv files in my computer and save them as separate tables in a new SQLite database. I then use R to send SQL queries to the database to retrieve only the data I need for a particular analysis.
 
 ```{r plot .csv file sizes by month}
-csv_sizes <- tibble(file = list.files(here("raw_data")),
-                    size = file.size(list.files(here("raw_data"),
-                                                full.names = TRUE))) %>% 
-               mutate(size_mb = size / 1048576)
-
-library(ggplot2)
-library(stringr)
-
-my_labels <- sapply(csv_sizes$file, function(m) str_replace(m,
-                                                pattern = "(.{4})(.{2})(.*)",
-                                                replacement = paste("\\1-\\2")))
-
-csv_sizes %>% 
-    ggplot(aes(x = file, y = size_mb, group = 1)) + geom_line() +
-    labs(title = paste0("Total size of files is ",
-                        csv_sizes %>% summarize(round(sum(size_mb), 0)) %>% 
-                            pull(), " MB")) +
-    theme(axis.text.x = element_text(angle = 45)) +
-    scale_x_discrete(labels = my_labels)
+# csv_sizes <- tibble(file = list.files(here("raw_data")),
+#                     size = file.size(list.files(here("raw_data"),
+#                                                 full.names = TRUE))) %>% 
+#                mutate(size_mb = size / 1048576)
+# 
+# library(ggplot2)
+# library(stringr)
+# 
+# my_labels <- sapply(csv_sizes$file, function(m) str_replace(m,
+#                                                 pattern = "(.{4})(.{2})(.*)",
+#                                                 replacement = paste("\\1-\\2")))
+# 
+# csv_sizes %>% 
+#     ggplot(aes(x = file, y = size_mb, group = 1)) + geom_line() +
+#     labs(title = paste0("Total size of files is ",
+#                         csv_sizes %>% summarize(round(sum(size_mb), 0)) %>% 
+#                             pull(), " MB")) +
+#     theme(axis.text.x = element_text(angle = 45)) +
+#     scale_x_discrete(labels = my_labels)
 
 
 ```

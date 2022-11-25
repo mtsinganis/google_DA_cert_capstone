@@ -147,44 +147,279 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <section id="prepare" class="level2">
 <h2 class="anchored" data-anchor-id="prepare">2. Prepare</h2>
 <p>This fictional case involves Chicago-area bike ride share program <a href="https://divvybikes.com/">Divvy</a>. Divvy’s <a href="https://divvy-tripdata.s3.amazonaws.com/index.html">historical trip data</a> have been made available by Motivate International Inc.&nbsp;under this <a href="https://ride.divvybikes.com/data-license-agreement">license</a>, which includes the right to “access, reproduce, analyze, copy, modify, distribute in your product or service and use the Data for any lawful purpose”.</p>
-<p>The data is organized in a directory containing zipped .csv files. Based on the file names we can deduce that they cover the period 2013 to 2022, with data from the last two years being published on a monthly basis. I will limit myself to the data from the most recent 12 months available (November 2021 - October 2022). The files in this time range use a consistent naming format (‘YYYYMM-divvy-tripdata.zip’), making it easy to download the files programmatically. I use a custom R script to download the 12 .zip files and extract the 12 .csv files of interest. The files are placed in a subfolder of the main directory called <code>raw_data</code>.</p>
-<p>Load required packages</p>
+<p>The data is organized in a directory containing zipped <code>.csv</code> files. Based on the file names I can deduce that they cover the period from 2013 to 2022. I will limit myself to the data from the most recent 12 months available (November 2021 - October 2022). The files in this time range use a consistent naming format (‘YYYYMM-divvy-tripdata.zip’), making it easy to download the files programmatically. I use two R scripts to download the 12 <code>.zip</code> files and extract the 12 <code>.csv</code> files of interest. These are placed in a sub-folder of the main directory called <code>raw_data</code>.</p>
+<p>Loading required packages:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">suppressPackageStartupMessages</span>(<span class="fu">library</span>(dplyr))</span>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">suppressPackageStartupMessages</span>(<span class="fu">library</span>(here))</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(stringr)</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Source function and script to programmatically download and extract files</p>
+<p>I source the scripts <code>01_make_file_names_function.R</code> and <code>02_extract_csv_files.R</code> to programmatically download and extract the files:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="st">"01_make_file_names_function.R"</span>)</span>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">#source("01_make_file_names_function.R")</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">#source("02_extract_csv_files.R")</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
+<p>Once the 12 <code>.csv</code> files are extracted and saved in the <code>raw_data</code> sub-folder I import them as data frames and save them in a list:</p>
+<div class="cell" data-hash="report_cache/html/import data_7dcb24e3b3e2640f37ba8234071334dd">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># create vector of .csv files to import</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>temp <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">"raw_data"</span>), <span class="at">pattern=</span><span class="st">"*.csv"</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># import all .csv files as data frames and store them in a list called 'trips'</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>trips <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="fu">file.path</span>(<span class="fu">here</span>(<span class="st">"raw_data"</span>), temp), read_csv)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Rows: 359978 Columns: 13
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr  (7): ride_id, rideable_type, start_station_name, start_station_id, end_...
+dbl  (4): start_lat, start_lng, end_lat, end_lng
+dttm (2): started_at, ended_at
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 247540 Columns: 13
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr  (7): ride_id, rideable_type, start_station_name, start_station_id, end_...
+dbl  (4): start_lat, start_lng, end_lat, end_lng
+dttm (2): started_at, ended_at
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 103770 Columns: 13
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr  (7): ride_id, rideable_type, start_station_name, start_station_id, end_...
+dbl  (4): start_lat, start_lng, end_lat, end_lng
+dttm (2): started_at, ended_at
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 115609 Columns: 13
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr  (7): ride_id, rideable_type, start_station_name, start_station_id, end_...
+dbl  (4): start_lat, start_lng, end_lat, end_lng
+dttm (2): started_at, ended_at
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 284042 Columns: 13
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr  (7): ride_id, rideable_type, start_station_name, start_station_id, end_...
+dbl  (4): start_lat, start_lng, end_lat, end_lng
+dttm (2): started_at, ended_at
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 371249 Columns: 13
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr  (7): ride_id, rideable_type, start_station_name, start_station_id, end_...
+dbl  (4): start_lat, start_lng, end_lat, end_lng
+dttm (2): started_at, ended_at
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 634858 Columns: 13
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr  (7): ride_id, rideable_type, start_station_name, start_station_id, end_...
+dbl  (4): start_lat, start_lng, end_lat, end_lng
+dttm (2): started_at, ended_at
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 769204 Columns: 13
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr  (7): ride_id, rideable_type, start_station_name, start_station_id, end_...
+dbl  (4): start_lat, start_lng, end_lat, end_lng
+dttm (2): started_at, ended_at
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 823488 Columns: 13
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr  (7): ride_id, rideable_type, start_station_name, start_station_id, end_...
+dbl  (4): start_lat, start_lng, end_lat, end_lng
+dttm (2): started_at, ended_at
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 785932 Columns: 13
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr  (7): ride_id, rideable_type, start_station_name, start_station_id, end_...
+dbl  (4): start_lat, start_lng, end_lat, end_lng
+dttm (2): started_at, ended_at
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 701339 Columns: 13
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr  (7): ride_id, rideable_type, start_station_name, start_station_id, end_...
+dbl  (4): start_lat, start_lng, end_lat, end_lng
+dttm (2): started_at, ended_at
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+Rows: 558685 Columns: 13
+── Column specification ────────────────────────────────────────────────────────
+Delimiter: ","
+chr  (7): ride_id, rideable_type, start_station_name, start_station_id, end_...
+dbl  (4): start_lat, start_lng, end_lat, end_lng
+dttm (2): started_at, ended_at
+
+ℹ Use `spec()` to retrieve the full column specification for this data.
+ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># extract date from file names and name data frames in the format 'yyyy_mm'</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(trips) <span class="ot">&lt;-</span> <span class="fu">sapply</span>(temp, <span class="cf">function</span>(m) <span class="fu">str_replace</span>(m,</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>                                                <span class="at">pattern =</span> <span class="st">"(.{4})(.{2})(.*)"</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>                                                <span class="at">replacement =</span> <span class="fu">paste</span>(<span class="st">"</span><span class="sc">\\</span><span class="st">1_</span><span class="sc">\\</span><span class="st">2"</span>)))</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co"># get a glimpse of the list</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(trips[<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>List of 2
+ $ 2021_11: spc_tbl_ [359,978 × 13] (S3: spec_tbl_df/tbl_df/tbl/data.frame)
+  ..$ ride_id           : chr [1:359978] "7C00A93E10556E47" "90854840DFD508BA" "0A7D10CDD144061C" "2F3BE33085BCFF02" ...
+  ..$ rideable_type     : chr [1:359978] "electric_bike" "electric_bike" "electric_bike" "electric_bike" ...
+  ..$ started_at        : POSIXct[1:359978], format: "2021-11-27 13:27:38" "2021-11-27 13:38:25" ...
+  ..$ ended_at          : POSIXct[1:359978], format: "2021-11-27 13:46:38" "2021-11-27 13:56:10" ...
+  ..$ start_station_name: chr [1:359978] NA NA NA NA ...
+  ..$ start_station_id  : chr [1:359978] NA NA NA NA ...
+  ..$ end_station_name  : chr [1:359978] NA NA NA NA ...
+  ..$ end_station_id    : chr [1:359978] NA NA NA NA ...
+  ..$ start_lat         : num [1:359978] 41.9 42 42 41.9 41.9 ...
+  ..$ start_lng         : num [1:359978] -87.7 -87.7 -87.7 -87.8 -87.6 ...
+  ..$ end_lat           : num [1:359978] 42 41.9 42 41.9 41.9 ...
+  ..$ end_lng           : num [1:359978] -87.7 -87.7 -87.7 -87.8 -87.6 ...
+  ..$ member_casual     : chr [1:359978] "casual" "casual" "casual" "casual" ...
+  ..- attr(*, "spec")=
+  .. .. cols(
+  .. ..   ride_id = col_character(),
+  .. ..   rideable_type = col_character(),
+  .. ..   started_at = col_datetime(format = ""),
+  .. ..   ended_at = col_datetime(format = ""),
+  .. ..   start_station_name = col_character(),
+  .. ..   start_station_id = col_character(),
+  .. ..   end_station_name = col_character(),
+  .. ..   end_station_id = col_character(),
+  .. ..   start_lat = col_double(),
+  .. ..   start_lng = col_double(),
+  .. ..   end_lat = col_double(),
+  .. ..   end_lng = col_double(),
+  .. ..   member_casual = col_character()
+  .. .. )
+  ..- attr(*, "problems")=&lt;externalptr&gt; 
+ $ 2021_12: spc_tbl_ [247,540 × 13] (S3: spec_tbl_df/tbl_df/tbl/data.frame)
+  ..$ ride_id           : chr [1:247540] "46F8167220E4431F" "73A77762838B32FD" "4CF42452054F59C5" "3278BA87BF698339" ...
+  ..$ rideable_type     : chr [1:247540] "electric_bike" "electric_bike" "electric_bike" "classic_bike" ...
+  ..$ started_at        : POSIXct[1:247540], format: "2021-12-07 15:06:07" "2021-12-11 03:43:29" ...
+  ..$ ended_at          : POSIXct[1:247540], format: "2021-12-07 15:13:42" "2021-12-11 04:10:23" ...
+  ..$ start_station_name: chr [1:247540] "Laflin St &amp; Cullerton St" "LaSalle Dr &amp; Huron St" "Halsted St &amp; North Branch St" "Halsted St &amp; North Branch St" ...
+  ..$ start_station_id  : chr [1:247540] "13307" "KP1705001026" "KA1504000117" "KA1504000117" ...
+  ..$ end_station_name  : chr [1:247540] "Morgan St &amp; Polk St" "Clarendon Ave &amp; Leland Ave" "Broadway &amp; Barry Ave" "LaSalle Dr &amp; Huron St" ...
+  ..$ end_station_id    : chr [1:247540] "TA1307000130" "TA1307000119" "13137" "KP1705001026" ...
+  ..$ start_lat         : num [1:247540] 41.9 41.9 41.9 41.9 41.9 ...
+  ..$ start_lng         : num [1:247540] -87.7 -87.6 -87.6 -87.6 -87.7 ...
+  ..$ end_lat           : num [1:247540] 41.9 42 41.9 41.9 41.9 ...
+  ..$ end_lng           : num [1:247540] -87.7 -87.7 -87.6 -87.6 -87.6 ...
+  ..$ member_casual     : chr [1:247540] "member" "casual" "member" "member" ...
+  ..- attr(*, "spec")=
+  .. .. cols(
+  .. ..   ride_id = col_character(),
+  .. ..   rideable_type = col_character(),
+  .. ..   started_at = col_datetime(format = ""),
+  .. ..   ended_at = col_datetime(format = ""),
+  .. ..   start_station_name = col_character(),
+  .. ..   start_station_id = col_character(),
+  .. ..   end_station_name = col_character(),
+  .. ..   end_station_id = col_character(),
+  .. ..   start_lat = col_double(),
+  .. ..   start_lng = col_double(),
+  .. ..   end_lat = col_double(),
+  .. ..   end_lng = col_double(),
+  .. ..   member_casual = col_character()
+  .. .. )
+  ..- attr(*, "problems")=&lt;externalptr&gt; </code></pre>
+</div>
+</div>
+<p>Before I combine all the data frames into one, I need to confirm whether they have same number of columns and identical column names.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sapply</span>(trips, ncol)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>2021_11 2021_12 2022_01 2022_02 2022_03 2022_04 2022_05 2022_06 2022_07 2022_08 
+     13      13      13      13      13      13      13      13      13      13 
+2022_09 2022_10 
+     13      13 </code></pre>
+</div>
+</div>
+<p>All data frames have 13 columns.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sapply</span>(<span class="fu">lapply</span>(trips, colnames), identical, <span class="fu">colnames</span>(trips[[<span class="dv">1</span>]]))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>2021_11 2021_12 2022_01 2022_02 2022_03 2022_04 2022_05 2022_06 2022_07 2022_08 
+   TRUE    TRUE    TRUE    TRUE    TRUE    TRUE    TRUE    TRUE    TRUE    TRUE 
+2022_09 2022_10 
+   TRUE    TRUE </code></pre>
+</div>
+</div>
+<p>They also have identical column names. This allows me to combine them (stack them) by row in one large data frame.</p>
+<div class="cell" data-hash="report_cache/html/combine-dataframes_e414bc102204d46c67bcf16006d29f58">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># bind all data frames of list by row (stack) and add new column 'yyyy_mm'</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co"># linking each row to its original data frame</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>trips <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(trips, <span class="at">.id =</span> <span class="st">"yyyy_mm"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div class="cell" data-hash="report_cache/html/separate-yyyy_mm-column_c22954327e09519985dc251c8d5e0022">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co"># separate 'yyyy_mm' column into 'year' and 'month' columns</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>trips <span class="ot">&lt;-</span> trips <span class="sc">%&gt;%</span> </span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>           <span class="fu">separate</span>(yyyy_mm,</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>                    <span class="at">into =</span> <span class="fu">c</span>(<span class="st">"year"</span>, <span class="st">"month"</span>),</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                    <span class="at">sep =</span> <span class="st">"_"</span>,</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                    <span class="at">remove =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">convert =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>I now check how many bike trips were registered per month.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>trips <span class="sc">%&gt;%</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(yyyy_mm) <span class="sc">%&gt;%</span> </span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>()) <span class="sc">%&gt;%</span> </span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> yyyy_mm, <span class="at">y =</span> n, <span class="at">group =</span> <span class="dv">1</span>)) <span class="sc">+</span> <span class="fu">geom_line</span>(<span class="at">color =</span> <span class="st">"blue"</span>) <span class="sc">+</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">90</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="report_files/figure-html/plot-trips-per-month-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>The number of bike trips shows clear seasonality, with a peak in July and a trough in January, suggesting bike usage is highly dependent on general weather conditions.</p>
 <p>A brief look at the file sizes suggests that importing these into RStudio and combining them in one dataframe can potentially crash the program or slow it down considerably. I therefore choose to avoid importing all the data in RStudio, but instead download the .csv files in my computer and save them as separate tables in a new SQLite database. I then use R to send SQL queries to the database to retrieve only the data I need for a particular analysis.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>csv_sizes <span class="ot">&lt;-</span> <span class="fu">tibble</span>(<span class="at">file =</span> <span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">"raw_data"</span>)),</span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>                    <span class="at">size =</span> <span class="fu">file.size</span>(<span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">"raw_data"</span>),</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>                                                <span class="at">full.names =</span> <span class="cn">TRUE</span>))) <span class="sc">%&gt;%</span> </span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>               <span class="fu">mutate</span>(<span class="at">size_mb =</span> size <span class="sc">/</span> <span class="dv">1048576</span>)</span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(stringr)</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>my_labels <span class="ot">&lt;-</span> <span class="fu">sapply</span>(csv_sizes<span class="sc">$</span>file, <span class="cf">function</span>(m) <span class="fu">str_replace</span>(m,</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>                                                <span class="at">pattern =</span> <span class="st">"(.{4})(.{2})(.*)"</span>,</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>                                                <span class="at">replacement =</span> <span class="fu">paste</span>(<span class="st">"</span><span class="sc">\\</span><span class="st">1-</span><span class="sc">\\</span><span class="st">2"</span>)))</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>csv_sizes <span class="sc">%&gt;%</span> </span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> file, <span class="at">y =</span> size_mb, <span class="at">group =</span> <span class="dv">1</span>)) <span class="sc">+</span> <span class="fu">geom_line</span>() <span class="sc">+</span></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">title =</span> <span class="fu">paste0</span>(<span class="st">"Total size of files is "</span>,</span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>                        csv_sizes <span class="sc">%&gt;%</span> <span class="fu">summarize</span>(<span class="fu">round</span>(<span class="fu">sum</span>(size_mb), <span class="dv">0</span>)) <span class="sc">%&gt;%</span> </span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>                            <span class="fu">pull</span>(), <span class="st">" MB"</span>)) <span class="sc">+</span></span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">45</span>)) <span class="sc">+</span></span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_x_discrete</span>(<span class="at">labels =</span> my_labels)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output-display">
-<p><img src="report_files/figure-html/plot%20.csv%20file%20sizes%20by%20month-1.png" class="img-fluid" width="672"></p>
-</div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># csv_sizes &lt;- tibble(file = list.files(here("raw_data")),</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="co">#                     size = file.size(list.files(here("raw_data"),</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co">#                                                 full.names = TRUE))) %&gt;% </span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co">#                mutate(size_mb = size / 1048576)</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="co"># library(ggplot2)</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="co"># library(stringr)</span></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="co"># my_labels &lt;- sapply(csv_sizes$file, function(m) str_replace(m,</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="co">#                                                 pattern = "(.{4})(.{2})(.*)",</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a><span class="co">#                                                 replacement = paste("\\1-\\2")))</span></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="co"># csv_sizes %&gt;% </span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="co">#     ggplot(aes(x = file, y = size_mb, group = 1)) + geom_line() +</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a><span class="co">#     labs(title = paste0("Total size of files is ",</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="co">#                         csv_sizes %&gt;% summarize(round(sum(size_mb), 0)) %&gt;% </span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="co">#                             pull(), " MB")) +</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="co">#     theme(axis.text.x = element_text(angle = 45)) +</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a><span class="co">#     scale_x_discrete(labels = my_labels)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
 <section id="process" class="level2">
