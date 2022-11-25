@@ -4,3 +4,4 @@
 .Ruserdata
 raw_data/
 create_db.R
+report_cache
