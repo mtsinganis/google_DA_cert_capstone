@@ -7,7 +7,7 @@ editor: visual
 
 ## 1. Ask
 
-Financial analysts at Cyclistic have determined that annual members are more profitable than casual riders. The director of marketing believes future growth depends on maximizing the number of annual members. The overarching business task can be stated as follows:
+Financial analysts at Cyclistic have determined that customers that are annual members are more profitable than casual riders. The director of marketing believes future growth depends on maximizing the number of annual members. The overarching business task can be stated as follows:
 
 **Business task**: Maximize the number of annual members by converting casual riders (single-ride and full-day passes) to annual members (annual membership).
 
@@ -33,7 +33,7 @@ Loading required packages:
 
 ```{r load packages, output = FALSE}
 library(dplyr)
-suppressPackageStartupMessages(library(here))
+library(here)
 library(stringr)
 library(tidyr)
 library(readr)
@@ -49,32 +49,42 @@ I source the scripts `01_make_file_names_function.R` and `02_extract_csv_files.R
 
 Once the 12 `.csv` files are extracted and saved in the `raw_data` sub-folder I import them as data frames and save them in a list:
 
-```{r import data, cache = TRUE}
+```{r import-data, cache = TRUE}
 # create vector of .csv files to import
 temp <- list.files(here("raw_data"), pattern="*.csv")
 
 # import all .csv files as data frames and store them in a list called 'trips'
 trips <- lapply(file.path(here("raw_data"), temp), read_csv)
+```
 
+Next, I rename each of the data frames according to their corresponding date in the format 'YYYY_MM': 
+
+```{r rename-list-elements}
 # extract date from file names and name data frames in the format 'yyyy_mm'
 names(trips) <- sapply(temp, function(m) str_replace(m,
                                                 pattern = "(.{4})(.{2})(.*)",
                                                 replacement = paste("\\1_\\2")))
-
-# get a glimpse of the list
-glimpse(trips[1:2])
 ```
 
-Before I combine all the data frames into one, I need to confirm whether they have same number of columns and identical column names.
+Let's take a first look at the first element of the list (first data frame):
+
+```{r glimpse-list}
+# get a glimpse of the list
+glimpse(trips[1])
+```
+
+I order to start exploring the data and getting insights into their structure, I want to combine all the data frames into one. Before I do that however, I need to confirm whether they all have same number of columns and identical column names.
 
 ```{r get-number-of-columns}
 sapply(trips, ncol)
 ```
+
 All data frames have 13 columns.
 
 ```{r check-if-same-column-names}
 sapply(lapply(trips, colnames), identical, colnames(trips[[1]]))
 ```
+
 They also have identical column names. This allows me to combine them (stack them) by row in one large data frame.
 
 ```{r combine-dataframes, cache = TRUE}
@@ -97,13 +107,18 @@ I now check how many bike trips were registered per month.
 
 ```{r plot-trips-per-month}
 trips %>%
-    group_by(yyyy_mm) %>% 
+    group_by(yyyy_mm, member_casual) %>% 
     summarise(n = n()) %>% 
-    ggplot(aes(x = yyyy_mm, y = n, group = 1)) + geom_line(color = "blue") +
+    ggplot(aes(x = yyyy_mm, y = n,
+               group = member_casual,
+               color = member_casual)) +
+    geom_line() +
     theme(axis.text.x = element_text(angle = 90))
 
 ```
-The number of bike trips shows clear seasonality, with a peak in July and a trough in January, suggesting bike usage is highly dependent on general weather conditions.
+The number of bike trips shows clear seasonality, with a peak in July and a trough in January, suggesting bike usage is highly dependent on general weather conditions. This seasonality is observed for both casual riders and members.
+
+
 
 
 
