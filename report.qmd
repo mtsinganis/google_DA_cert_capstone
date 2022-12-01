@@ -21,17 +21,16 @@ The key stakeholders in this project are:
 
 -   **Cyclistic executive team**: They will decide whether to approve the recommended marketing program
 
--   **Lily Moreno (director of marketing and my manager)**: She is responsible for the development of campaigns and initiatives to promote the bike-share program and will need my recommendations to help her design a successful new marketing campaign to generate new annual memberships
+-   **Lily Moreno (director of marketing)**: She is responsible for the development of campaigns and initiatives to promote the bike-share program and will need my recommendations to help her design a successful new marketing campaign to generate new annual memberships
 
 ## 2. Prepare
 
 This fictional case involves Chicago-area bike ride share program [Divvy](https://divvybikes.com/). Divvy's [historical trip data](https://divvy-tripdata.s3.amazonaws.com/index.html) have been made available by Motivate International Inc. under this [license](https://ride.divvybikes.com/data-license-agreement), which includes the right to "access, reproduce, analyze, copy, modify, distribute in your product or service and use the Data for any lawful purpose".
 
-The data is organized in a directory containing zipped `.csv` files. Based on the file names I can deduce that they cover the period from 2013 to 2022. I will limit myself to the data from the most recent 12 months available (November 2021 - October 2022). The files in this time range use a consistent naming format ('YYYYMM-divvy-tripdata.zip'), making it easy to download the files programmatically. I use two R scripts to download the 12 `.zip` files and extract the 12 `.csv` files of interest. These are placed in a sub-folder of the main directory called `raw_data`.
-
-Loading required packages:
+The data is organized in a directory containing zipped `.csv` files. I will limit myself to the data from the previous 12 months (November 2021 - October 2022). The files in this time range use a consistent naming format ("YYYYMM-divvy-tripdata.zip"), making it easy to download the files programmatically. I use two R scripts to download the 12 `.zip` files corresponding to the 12-month period I will be focusing on. The scripts also extract the 12 `.csv` files of interest. These are placed in a sub-folder of the main directory called `raw_data`.
 
 ```{r load packages, output = FALSE}
+# Loading required packages
 library(dplyr)
 library(here)
 library(stringr)
@@ -40,117 +39,66 @@ library(readr)
 library(ggplot2)
 ```
 
-I source the scripts `01_make_file_names_function.R` and `02_extract_csv_files.R` to programmatically download and extract the files:
+I source the scripts `01_make_file_names_function.R` and `02_extract_csv_files.R` to programmatically download and extract the files. Once the 12 `.csv` files are extracted and saved in the newly created `raw_data` sub-folder I import them and save them as data frames in a list called `rides`:
 
-```{r source-scripts-to-download-and-extract-csv-files}
+```{r download-extract-import-csv-files, cache = TRUE}
 #source("01_make_file_names_function.R")
 #source("02_extract_csv_files.R")
-```
 
-Once the 12 `.csv` files are extracted and saved in the `raw_data` sub-folder I import them as data frames and save them in a list:
-
-```{r import-data, cache = TRUE}
 # create vector of .csv files to import
 temp <- list.files(here("raw_data"), pattern="*.csv")
 
 # import all .csv files as data frames and store them in a list called 'trips'
-trips <- lapply(file.path(here("raw_data"), temp), read_csv)
-```
+rides <- lapply(file.path(here("raw_data"), temp), read_csv,
+                show_col_types = FALSE)
 
-Next, I rename each of the data frames according to their corresponding date in the format 'YYYY_MM': 
-
-```{r rename-list-elements}
-# extract date from file names and name data frames in the format 'yyyy_mm'
-names(trips) <- sapply(temp, function(m) str_replace(m,
+# extract date string from file names and name data frames (format 'yyyy_mm')
+names(rides) <- sapply(temp, function(m) str_replace(m,
                                                 pattern = "(.{4})(.{2})(.*)",
                                                 replacement = paste("\\1_\\2")))
 ```
 
-Let's take a first look at the first element of the list (first data frame):
+In order to start exploring the data and getting insights into the structure, I want to combine all data frames into one large data frame. Before I proceed, I need to confirm they have the same number of columns and identical column names.
 
-```{r glimpse-list}
-# get a glimpse of the list
-glimpse(trips[1])
+```{r get-ncol-colnames}
+sapply(rides, ncol)
+sapply(lapply(rides, colnames), identical, colnames(rides[[1]]))
 ```
 
-I order to start exploring the data and getting insights into their structure, I want to combine all the data frames into one. Before I do that however, I need to confirm whether they all have same number of columns and identical column names.
-
-```{r get-number-of-columns}
-sapply(trips, ncol)
-```
-
-All data frames have 13 columns.
-
-```{r check-if-same-column-names}
-sapply(lapply(trips, colnames), identical, colnames(trips[[1]]))
-```
-
-They also have identical column names. This allows me to combine them (stack them) by row in one large data frame.
+All data frames have 13 columns with identical column names. This allows me to combine them by row (stack them) in one large data frame.
 
 ```{r combine-dataframes, cache = TRUE}
 # bind all data frames of list by row (stack) and add new column 'yyyy_mm'
 # linking each row to its original data frame
-trips <- bind_rows(trips, .id = "yyyy_mm")
+rides <- bind_rows(rides, .id = "yyyy_mm")
 ```
 
-```{r separate-yyyy_mm-column, cache = TRUE}
-# separate 'yyyy_mm' column into 'year' and 'month' columns
-trips <- trips %>% 
-           separate(yyyy_mm,
-                    into = c("year", "month"),
-                    sep = "_",
-                    remove = FALSE,
-                    convert = TRUE)
+Let's take a look at the data frame to check how the data is organized:
+
+```{r glimpse-data-frame}
+# check the structure of 'trips'
+glimpse(rides[1])
 ```
 
-I now check how many bike trips were registered per month.
+## Data bias and credibility
 
-```{r plot-trips-per-month}
-trips %>%
-    group_by(yyyy_mm, member_casual) %>% 
-    summarise(n = n()) %>% 
-    ggplot(aes(x = yyyy_mm, y = n,
-               group = member_casual,
-               color = member_casual)) +
-    geom_line() +
-    theme(axis.text.x = element_text(angle = 90))
+### Bias
 
-```
-The number of bike trips shows clear seasonality, with a peak in July and a trough in January, suggesting bike usage is highly dependent on general weather conditions. This seasonality is observed for both casual riders and members.
+As far as I can ascertain, Divvy records all individual trips, independent of any customer attributes. This would suggest that the rides in my data set represent the entire population of rides, indicating an unbiased recording of rides.
 
+### Credibility
 
+Let us look at different aspects of the credibility of the data.
 
-
-
-
-
-A brief look at the file sizes suggests that importing these into RStudio and combining them in one dataframe can potentially crash the program or slow it down considerably. I therefore choose to avoid importing all the data in RStudio, but instead download the .csv files in my computer and save them as separate tables in a new SQLite database. I then use R to send SQL queries to the database to retrieve only the data I need for a particular analysis.
-
-```{r plot .csv file sizes by month}
-# csv_sizes <- tibble(file = list.files(here("raw_data")),
-#                     size = file.size(list.files(here("raw_data"),
-#                                                 full.names = TRUE))) %>% 
-#                mutate(size_mb = size / 1048576)
-# 
-# library(ggplot2)
-# library(stringr)
-# 
-# my_labels <- sapply(csv_sizes$file, function(m) str_replace(m,
-#                                                 pattern = "(.{4})(.{2})(.*)",
-#                                                 replacement = paste("\\1-\\2")))
-# 
-# csv_sizes %>% 
-#     ggplot(aes(x = file, y = size_mb, group = 1)) + geom_line() +
-#     labs(title = paste0("Total size of files is ",
-#                         csv_sizes %>% summarize(round(sum(size_mb), 0)) %>% 
-#                             pull(), " MB")) +
-#     theme(axis.text.x = element_text(angle = 45)) +
-#     scale_x_discrete(labels = my_labels)
-
-
-```
+-   **Reliable**: I consider the available data to be reliable in the sense that they are accurate (datetimes, locations, customer attributes recorder and measured accurately) and complete (all rides are recorded).
+-   **Original**: The data is original since I am accessing data directly from the organization that collected it.
+-   **Comprehensive**: The data set contains information that helps us answer our question. On the other hand, there is a lot more information that we could potentially have access to that would allow us to provide a more fine-grained view of the differences in usage between casual and annual riders (e.g. sex, home address, age). Due to data privacy issues however, personally identifiable information has been removed from the data set.
+-   **Current**: The data I use in my analysis is current and represents the most recent information on the rides using Divvy's bikes.
+-   **Cited**: The data comes directly from the company owning the bikes and is refreshed regularly, giving us confidence in the credibility of the data.
 
 ## 3. Process
+
+
 
 ## 4. Analyze
 
