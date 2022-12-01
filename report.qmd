@@ -98,6 +98,21 @@ Let us look at different aspects of the credibility of the data.
 
 ## 3. Process
 
+### Tools
+
+```{r}
+#| echo: false
+#| output: false
+csv_size <- sum(sapply(list.files(here("raw_data"), full.names = TRUE),
+                       file.size)) / 1024^3
+object_size <- as.numeric(object.size(rides) / 1024^3)
+my_ram <- parse_number(system2(command = 'systeminfo',
+                               stdout = TRUE,
+                               stderr = TRUE,
+                               wait = TRUE)[25]) / 1024
+```
+
+The total size of the `.csv` files is `r csv_size` GiB and the size of the `rides` data frame is `r object_size` GiB, representing a relative increase of `r (object_size - csv_size) / csv_size`%. Despite the relatively large size of the object, it represents only a minor fraction (`r object_size / my_ram * 100`%) of the locally available RAM, well below the recommended 1/3 ratio. This means I can use RStudio to process and analyze the data frame without the system crashing. Naturally, any duplication of the object, large increases in column number, etc. may affect my ability to continue using RStudio and may necessitate the usage of an external database. I will reevalute this once decision once I start cleaning and transforming the data.
 
 
 ## 4. Analyze
