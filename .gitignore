@@ -5,3 +5,5 @@
 raw_data/
 create_db.R
 report_cache
+report_files
+notes.qmd
