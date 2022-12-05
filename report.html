@@ -148,17 +148,18 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <h2 class="anchored" data-anchor-id="prepare">2. Prepare</h2>
 <p>This fictional case involves Chicago-area bike ride share program <a href="https://divvybikes.com/">Divvy</a>. Divvy’s <a href="https://divvy-tripdata.s3.amazonaws.com/index.html">historical trip data</a> have been made available by Motivate International Inc.&nbsp;under this <a href="https://ride.divvybikes.com/data-license-agreement">license</a>, which includes the right to “access, reproduce, analyze, copy, modify, distribute in your product or service and use the Data for any lawful purpose”.</p>
 <p>The data is organized in a directory containing zipped <code>.csv</code> files. I will limit myself to the data from the previous 12 months (November 2021 - October 2022). The files in this time range use a consistent naming format (“YYYYMM-divvy-tripdata.zip”), making it easy to download the files programmatically. I use two R scripts to download the 12 <code>.zip</code> files corresponding to the 12-month period I will be focusing on. The scripts also extract the 12 <code>.csv</code> files of interest. These are placed in a sub-folder of the main directory called <code>raw_data</code>.</p>
-<p>Loading required packages:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(stringr)</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Loading required packages</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(stringr)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyr)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(readr)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(skimr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>I source the scripts <code>01_make_file_names_function.R</code> and <code>02_extract_csv_files.R</code> to programmatically download and extract the files. Once the 12 <code>.csv</code> files are extracted and saved in the newly created <code>raw_data</code> sub-folder I import them and save them as data frames in a list:</p>
-<div class="cell" data-hash="report_cache/html/download-extract-import-csv-files_052148c9be66b7e0ff44db1da0d848d8">
+<p>I source the scripts <code>01_make_file_names_function.R</code> and <code>02_extract_csv_files.R</code> to programmatically download and extract the files. Once the 12 <code>.csv</code> files are extracted and saved in the newly created <code>raw_data</code> sub-folder I import them and save them as data frames in a list called <code>rides</code>:</p>
+<div class="cell" data-hash="report_cache/html/download-extract-import-csv-files_0c406f3a69cbe2e3232e952481d1193c">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co">#source("01_make_file_names_function.R")</span></span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co">#source("02_extract_csv_files.R")</span></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -166,24 +167,24 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>temp <span class="ot">&lt;-</span> <span class="fu">list.files</span>(<span class="fu">here</span>(<span class="st">"raw_data"</span>), <span class="at">pattern=</span><span class="st">"*.csv"</span>)</span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># import all .csv files as data frames and store them in a list called 'trips'</span></span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>trips <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="fu">file.path</span>(<span class="fu">here</span>(<span class="st">"raw_data"</span>), temp), read_csv,</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>rides <span class="ot">&lt;-</span> <span class="fu">lapply</span>(<span class="fu">file.path</span>(<span class="fu">here</span>(<span class="st">"raw_data"</span>), temp), read_csv,</span>
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>                <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
 <span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co"># extract date string from file names and name data frames (format 'yyyy_mm')</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(trips) <span class="ot">&lt;-</span> <span class="fu">sapply</span>(temp, <span class="cf">function</span>(m) <span class="fu">str_replace</span>(m,</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(rides) <span class="ot">&lt;-</span> <span class="fu">sapply</span>(temp, <span class="cf">function</span>(m) <span class="fu">str_replace</span>(m,</span>
 <span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>                                                <span class="at">pattern =</span> <span class="st">"(.{4})(.{2})(.*)"</span>,</span>
 <span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>                                                <span class="at">replacement =</span> <span class="fu">paste</span>(<span class="st">"</span><span class="sc">\\</span><span class="st">1_</span><span class="sc">\\</span><span class="st">2"</span>)))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>I order to start exploring the data and getting insights into the structure, I want to combine all the data frames into one. Before I proceed, I need to confirm they have the same number of columns and identical column names.</p>
+<p>In order to start exploring the data and getting insights into the structure, I want to combine all data frames into one large data frame. Before I proceed, I need to confirm they have the same number of columns and identical column names.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sapply</span>(trips, ncol)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sapply</span>(rides, ncol)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>2021_11 2021_12 2022_01 2022_02 2022_03 2022_04 2022_05 2022_06 2022_07 2022_08 
      13      13      13      13      13      13      13      13      13      13 
 2022_09 2022_10 
      13      13 </code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sapply</span>(<span class="fu">lapply</span>(trips, colnames), identical, <span class="fu">colnames</span>(trips[[<span class="dv">1</span>]]))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sapply</span>(<span class="fu">lapply</span>(rides, colnames), identical, <span class="fu">colnames</span>(rides[[<span class="dv">1</span>]]))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>2021_11 2021_12 2022_01 2022_02 2022_03 2022_04 2022_05 2022_06 2022_07 2022_08 
    TRUE    TRUE    TRUE    TRUE    TRUE    TRUE    TRUE    TRUE    TRUE    TRUE 
@@ -192,30 +193,42 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </div>
 </div>
 <p>All data frames have 13 columns with identical column names. This allows me to combine them by row (stack them) in one large data frame.</p>
-<div class="cell" data-hash="report_cache/html/combine-dataframes_e414bc102204d46c67bcf16006d29f58">
+<div class="cell" data-hash="report_cache/html/combine-dataframes_9c0e80d83403aa1e26c4b1476e2b115f">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># bind all data frames of list by row (stack) and add new column 'yyyy_mm'</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co"># linking each row to its original data frame</span></span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>trips <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(trips, <span class="at">.id =</span> <span class="st">"yyyy_mm"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>rides <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(rides, <span class="at">.id =</span> <span class="st">"yyyy_mm"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Let’s take a look at the data frame to check how the data is organized:</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># check the structure of 'trips'</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(trips[<span class="dv">1</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">glimpse</span>(rides)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Rows: 5,755,694
-Columns: 1
-$ yyyy_mm &lt;chr&gt; "2021_11", "2021_11", "2021_11", "2021_11", "2021_11", "2021_1…</code></pre>
+Columns: 14
+$ yyyy_mm            &lt;chr&gt; "2021_11", "2021_11", "2021_11", "2021_11", "2021_1…
+$ ride_id            &lt;chr&gt; "7C00A93E10556E47", "90854840DFD508BA", "0A7D10CDD1…
+$ rideable_type      &lt;chr&gt; "electric_bike", "electric_bike", "electric_bike", …
+$ started_at         &lt;dttm&gt; 2021-11-27 13:27:38, 2021-11-27 13:38:25, 2021-11-…
+$ ended_at           &lt;dttm&gt; 2021-11-27 13:46:38, 2021-11-27 13:56:10, 2021-11-…
+$ start_station_name &lt;chr&gt; NA, NA, NA, NA, NA, "Michigan Ave &amp; Oak St", NA, NA…
+$ start_station_id   &lt;chr&gt; NA, NA, NA, NA, NA, "13042", NA, NA, NA, NA, NA, NA…
+$ end_station_name   &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ end_station_id     &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+$ start_lat          &lt;dbl&gt; 41.93000, 41.96000, 41.96000, 41.94000, 41.90000, 4…
+$ start_lng          &lt;dbl&gt; -87.72000, -87.70000, -87.70000, -87.79000, -87.630…
+$ end_lat            &lt;dbl&gt; 41.96, 41.92, 41.96, 41.93, 41.88, 41.90, 41.80, 41…
+$ end_lng            &lt;dbl&gt; -87.73, -87.70, -87.70, -87.79, -87.62, -87.63, -87…
+$ member_casual      &lt;chr&gt; "casual", "casual", "casual", "casual", "casual", "…</code></pre>
 </div>
 </div>
-</section>
-<section id="data-bias-and-credibility" class="level2">
-<h2 class="anchored" data-anchor-id="data-bias-and-credibility">Data bias and credibility</h2>
-<section id="bias" class="level3">
-<h3 class="anchored" data-anchor-id="bias">Bias</h3>
+<section id="data-bias-and-credibility" class="level3">
+<h3 class="anchored" data-anchor-id="data-bias-and-credibility">Data bias and credibility</h3>
+<section id="bias" class="level4">
+<h4 class="anchored" data-anchor-id="bias">Bias</h4>
 <p>As far as I can ascertain, Divvy records all individual trips, independent of any customer attributes. This would suggest that the rides in my data set represent the entire population of rides, indicating an unbiased recording of rides.</p>
 </section>
-<section id="credibility" class="level3">
-<h3 class="anchored" data-anchor-id="credibility">Credibility</h3>
+<section id="credibility" class="level4">
+<h4 class="anchored" data-anchor-id="credibility">Credibility</h4>
 <p>Let us look at different aspects of the credibility of the data.</p>
 <ul>
 <li><strong>Reliable</strong>: I consider the available data to be reliable in the sense that they are accurate (datetimes, locations, customer attributes recorder and measured accurately) and complete (all rides are recorded).</li>
@@ -224,61 +237,311 @@ $ yyyy_mm &lt;chr&gt; "2021_11", "2021_11", "2021_11", "2021_11", "2021_11", "20
 <li><strong>Current</strong>: The data I use in my analysis is current and represents the most recent information on the rides using Divvy’s bikes.</li>
 <li><strong>Cited</strong>: The data comes directly from the company owning the bikes and is refreshed regularly, giving us confidence in the credibility of the data.</li>
 </ul>
-<p>I create two new columns, <code>year</code> and <code>month</code>, in case I need to filter by those variables.</p>
-<div class="cell" data-hash="report_cache/html/separate-yyyy_mm-column_4723ec6f4b1b8eb864a0d4d1a86f0d64">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># separate 'yyyy_mm' column into 'year' and 'month' columns</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="co"># trips &lt;- trips %&gt;% </span></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co">#            separate(yyyy_mm,</span></span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co">#                     into = c("year", "month"),</span></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co">#                     sep = "_",</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="co">#                     remove = FALSE,</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="co">#                     convert = TRUE)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>I now check how many bike trips were registered per month.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>trips <span class="sc">%&gt;%</span></span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(yyyy_mm, member_casual) <span class="sc">%&gt;%</span> </span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">summarise</span>(<span class="at">n =</span> <span class="fu">n</span>()) <span class="sc">%&gt;%</span> </span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> yyyy_mm, <span class="at">y =</span> n,</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>               <span class="at">group =</span> member_casual,</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>               <span class="at">color =</span> member_casual)) <span class="sc">+</span></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_line</span>() <span class="sc">+</span></span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">90</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>`summarise()` has grouped output by 'yyyy_mm'. You can override using the
-`.groups` argument.</code></pre>
-</div>
-<div class="cell-output-display">
-<p><img src="report_files/figure-html/plot-trips-per-month-1.png" class="img-fluid" width="672"></p>
-</div>
-</div>
-<p>The number of bike trips shows clear seasonality, with a peak in July and a trough in January, suggesting bike usage is highly dependent on general weather conditions. This seasonality is observed for both casual riders and members.</p>
-<p>A brief look at the file sizes suggests that importing these into RStudio and combining them in one dataframe can potentially crash the program or slow it down considerably. I therefore choose to avoid importing all the data in RStudio, but instead download the .csv files in my computer and save them as separate tables in a new SQLite database. I then use R to send SQL queries to the database to retrieve only the data I need for a particular analysis.</p>
-<div class="cell">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># csv_sizes &lt;- tibble(file = list.files(here("raw_data")),</span></span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="co">#                     size = file.size(list.files(here("raw_data"),</span></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co">#                                                 full.names = TRUE))) %&gt;% </span></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="co">#                mutate(size_mb = size / 1048576)</span></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="co"># library(ggplot2)</span></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co"># library(stringr)</span></span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="co"># my_labels &lt;- sapply(csv_sizes$file, function(m) str_replace(m,</span></span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="co">#                                                 pattern = "(.{4})(.{2})(.*)",</span></span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="co">#                                                 replacement = paste("\\1-\\2")))</span></span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="co"># csv_sizes %&gt;% </span></span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="co">#     ggplot(aes(x = file, y = size_mb, group = 1)) + geom_line() +</span></span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a><span class="co">#     labs(title = paste0("Total size of files is ",</span></span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="co">#                         csv_sizes %&gt;% summarize(round(sum(size_mb), 0)) %&gt;% </span></span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="co">#                             pull(), " MB")) +</span></span>
-<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="co">#     theme(axis.text.x = element_text(angle = 45)) +</span></span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a><span class="co">#     scale_x_discrete(labels = my_labels)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
+</section>
 </section>
 </section>
 <section id="process" class="level2">
 <h2 class="anchored" data-anchor-id="process">3. Process</h2>
+<p>In this section I do the following:</p>
+<ul>
+<li>I decide on the tools I will use</li>
+<li>I clean the data and document the cleaning process</li>
+<li>I transform the data so that it is ready to analyze</li>
+</ul>
+<section id="choice-of-tools" class="level3">
+<h3 class="anchored" data-anchor-id="choice-of-tools">Choice of tool(s)</h3>
+<div class="cell">
+
+</div>
+<p>The total size of the <code>.csv</code> files is 1.01 GiB and the size of the <code>rides</code> data frame is 1.03 GiB, representing a relative increase of 2.2%. Despite the relatively large size of the object, it represents only a minor fraction (3.27%) of the locally available RAM, well below the recommended 1/3 ratio. I therefore choose to use <strong>RStudio</strong> to process and analyze the data frame without the system crashing. Naturally, any duplication of such a large object or an increase in the number of columns may change these facts and may necessitate the use of an external database to pull data from as needed. I will reevaluate this decision once I start cleaning and transforming the data.</p>
+</section>
+<section id="data-cleaning" class="level3">
+<h3 class="anchored" data-anchor-id="data-cleaning">Data cleaning</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># get broad overview of data frame with relevant summaries</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">skim_without_charts</span>(rides)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<table class="table table-sm table-striped">
+<caption>Data summary</caption>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Name</td>
+<td style="text-align: left;">rides</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Number of rows</td>
+<td style="text-align: left;">5755694</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Number of columns</td>
+<td style="text-align: left;">14</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">_______________________</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Column type frequency:</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">character</td>
+<td style="text-align: left;">8</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">numeric</td>
+<td style="text-align: left;">4</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">POSIXct</td>
+<td style="text-align: left;">2</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">________________________</td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Group variables</td>
+<td style="text-align: left;">None</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: character</strong></p>
+<table class="table table-sm table-striped">
+<colgroup>
+<col style="width: 24%">
+<col style="width: 12%">
+<col style="width: 18%">
+<col style="width: 5%">
+<col style="width: 5%">
+<col style="width: 7%">
+<col style="width: 11%">
+<col style="width: 14%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">skim_variable</th>
+<th style="text-align: right;">n_missing</th>
+<th style="text-align: right;">complete_rate</th>
+<th style="text-align: right;">min</th>
+<th style="text-align: right;">max</th>
+<th style="text-align: right;">empty</th>
+<th style="text-align: right;">n_unique</th>
+<th style="text-align: right;">whitespace</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">yyyy_mm</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1.00</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">12</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ride_id</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1.00</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">5755694</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">rideable_type</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1.00</td>
+<td style="text-align: right;">11</td>
+<td style="text-align: right;">13</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">start_station_name</td>
+<td style="text-align: right;">878177</td>
+<td style="text-align: right;">0.85</td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">64</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1639</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">start_station_id</td>
+<td style="text-align: right;">878177</td>
+<td style="text-align: right;">0.85</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">44</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1306</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">end_station_name</td>
+<td style="text-align: right;">940010</td>
+<td style="text-align: right;">0.84</td>
+<td style="text-align: right;">9</td>
+<td style="text-align: right;">64</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1663</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">end_station_id</td>
+<td style="text-align: right;">940010</td>
+<td style="text-align: right;">0.84</td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">44</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1314</td>
+<td style="text-align: right;">0</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">member_casual</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1.00</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">6</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: numeric</strong></p>
+<table class="table table-sm table-striped">
+<colgroup>
+<col style="width: 16%">
+<col style="width: 11%">
+<col style="width: 16%">
+<col style="width: 8%">
+<col style="width: 5%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 8%">
+<col style="width: 8%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">skim_variable</th>
+<th style="text-align: right;">n_missing</th>
+<th style="text-align: right;">complete_rate</th>
+<th style="text-align: right;">mean</th>
+<th style="text-align: right;">sd</th>
+<th style="text-align: right;">p0</th>
+<th style="text-align: right;">p25</th>
+<th style="text-align: right;">p50</th>
+<th style="text-align: right;">p75</th>
+<th style="text-align: right;">p100</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">start_lat</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">41.90</td>
+<td style="text-align: right;">0.05</td>
+<td style="text-align: right;">41.64</td>
+<td style="text-align: right;">41.88</td>
+<td style="text-align: right;">41.90</td>
+<td style="text-align: right;">41.93</td>
+<td style="text-align: right;">45.64</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">start_lng</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-87.65</td>
+<td style="text-align: right;">0.03</td>
+<td style="text-align: right;">-87.84</td>
+<td style="text-align: right;">-87.66</td>
+<td style="text-align: right;">-87.64</td>
+<td style="text-align: right;">-87.63</td>
+<td style="text-align: right;">-73.80</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">end_lat</td>
+<td style="text-align: right;">5835</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">41.90</td>
+<td style="text-align: right;">0.05</td>
+<td style="text-align: right;">41.39</td>
+<td style="text-align: right;">41.88</td>
+<td style="text-align: right;">41.90</td>
+<td style="text-align: right;">41.93</td>
+<td style="text-align: right;">42.37</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">end_lng</td>
+<td style="text-align: right;">5835</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">-87.65</td>
+<td style="text-align: right;">0.03</td>
+<td style="text-align: right;">-88.97</td>
+<td style="text-align: right;">-87.66</td>
+<td style="text-align: right;">-87.64</td>
+<td style="text-align: right;">-87.63</td>
+<td style="text-align: right;">-87.30</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Variable type: POSIXct</strong></p>
+<table class="table table-sm table-striped">
+<colgroup>
+<col style="width: 13%">
+<col style="width: 9%">
+<col style="width: 13%">
+<col style="width: 18%">
+<col style="width: 18%">
+<col style="width: 18%">
+<col style="width: 8%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">skim_variable</th>
+<th style="text-align: right;">n_missing</th>
+<th style="text-align: right;">complete_rate</th>
+<th style="text-align: left;">min</th>
+<th style="text-align: left;">max</th>
+<th style="text-align: left;">median</th>
+<th style="text-align: right;">n_unique</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">started_at</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">2021-11-01 00:00:14</td>
+<td style="text-align: left;">2022-10-31 23:59:33</td>
+<td style="text-align: left;">2022-06-30 18:31:03</td>
+<td style="text-align: right;">4824622</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">ended_at</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: left;">2021-11-01 00:04:06</td>
+<td style="text-align: left;">2022-11-07 04:53:58</td>
+<td style="text-align: left;">2022-06-30 18:49:28</td>
+<td style="text-align: right;">4836310</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>I observe the following: - <code>yyyy_mm</code>: by design we have 12 unique months (November 2021 to December 2022) - <code>ride_id</code>: the unique values of <code>ride_id</code> are equal to the number of rows in the data frame. This is a confirmation that each of the 5755694 rides (observations) in our data set is unique. - <code>rideable_type</code>:</p>
+</section>
+<section id="data-transformation" class="level3">
+<h3 class="anchored" data-anchor-id="data-transformation">Data transformation</h3>
+</section>
 </section>
 <section id="analyze" class="level2">
 <h2 class="anchored" data-anchor-id="analyze">4. Analyze</h2>

@@ -37,11 +37,14 @@ library(stringr)
 library(tidyr)
 library(readr)
 library(ggplot2)
+library(skimr)
 ```
 
 I source the scripts `01_make_file_names_function.R` and `02_extract_csv_files.R` to programmatically download and extract the files. Once the 12 `.csv` files are extracted and saved in the newly created `raw_data` sub-folder I import them and save them as data frames in a list called `rides`:
 
-```{r download-extract-import-csv-files, cache = TRUE}
+```{r download-extract-import-csv-files}
+#| cache: true
+
 #source("01_make_file_names_function.R")
 #source("02_extract_csv_files.R")
 
@@ -67,7 +70,9 @@ sapply(lapply(rides, colnames), identical, colnames(rides[[1]]))
 
 All data frames have 13 columns with identical column names. This allows me to combine them by row (stack them) in one large data frame.
 
-```{r combine-dataframes, cache = TRUE}
+```{r combine-dataframes}
+#| cache: true
+
 # bind all data frames of list by row (stack) and add new column 'yyyy_mm'
 # linking each row to its original data frame
 rides <- bind_rows(rides, .id = "yyyy_mm")
@@ -77,16 +82,16 @@ Let's take a look at the data frame to check how the data is organized:
 
 ```{r glimpse-data-frame}
 # check the structure of 'trips'
-glimpse(rides[1])
+glimpse(rides)
 ```
 
-## Data bias and credibility
+### Data bias and credibility
 
-### Bias
+#### Bias
 
 As far as I can ascertain, Divvy records all individual trips, independent of any customer attributes. This would suggest that the rides in my data set represent the entire population of rides, indicating an unbiased recording of rides.
 
-### Credibility
+#### Credibility
 
 Let us look at different aspects of the credibility of the data.
 
@@ -98,22 +103,108 @@ Let us look at different aspects of the credibility of the data.
 
 ## 3. Process
 
-### Tools
+In this section I do the following:
+
+-   I decide on the tools I will use
+-   I clean the data and document the cleaning process
+-   I transform the data so that it is ready to analyze
+
+### Choice of tool(s)
 
 ```{r}
 #| echo: false
 #| output: false
 csv_size <- sum(sapply(list.files(here("raw_data"), full.names = TRUE),
                        file.size)) / 1024^3
-object_size <- as.numeric(object.size(rides) / 1024^3)
+object_size <- as.numeric(object.size(rides)) / 1024^3
 my_ram <- parse_number(system2(command = 'systeminfo',
                                stdout = TRUE,
                                stderr = TRUE,
                                wait = TRUE)[25]) / 1024
 ```
 
-The total size of the `.csv` files is `r csv_size` GiB and the size of the `rides` data frame is `r object_size` GiB, representing a relative increase of `r (object_size - csv_size) / csv_size`%. Despite the relatively large size of the object, it represents only a minor fraction (`r object_size / my_ram * 100`%) of the locally available RAM, well below the recommended 1/3 ratio. This means I can use RStudio to process and analyze the data frame without the system crashing. Naturally, any duplication of the object, large increases in column number, etc. may affect my ability to continue using RStudio and may necessitate the usage of an external database. I will reevalute this once decision once I start cleaning and transforming the data.
+The total size of the `.csv` files is `r round(csv_size, 2)` GiB and the size of the `rides` data frame is `r round(object_size, 3)` GiB, representing a relative increase of `r round((object_size - csv_size) / csv_size * 100, 2)`%. Despite the relatively large size of the object, it represents only a minor fraction (`r round(object_size / my_ram * 100, 2)`%) of the locally available RAM, well below the recommended 1/3 ratio. I therefore choose to use **RStudio** to process and analyze the data frame without the system crashing. Naturally, any duplication of such a large object or an increase in the number of columns may change these facts and may necessitate the use of an external database to pull data from as needed. I will reevaluate this decision once I start cleaning and transforming the data.
 
+### Data cleaning
+
+```{r}
+# get broad overview of data frame with relevant summaries
+skim_without_charts(rides)
+```
+
+I observe the following:
+
+-   `yyyy_mm`: by design we have 12 unique months (November 2021 to December 2022)
+-   `ride_id`: the unique values of `ride_id` are equal to the number of rows in the data frame. This is a confirmation that each of the `r nrow(rides)` rides (observations) in our data set is unique
+-   `rideable_type`: this variable takes on three unique values (`r rides %>% distinct(rideable_type)`). It is not immediately clear what `docked_bike` means, given the fact that each observation represents a trip of length >60 sec.
+-   `start_station_name` and `start_station_id`: these two variables have the exact same number of missing values (n = 878177), indicating that for any given observation, if one variable has a value the other one does too. Interestingly, the number of unique values of the two variables is **NOT** the same. There are 1639 values for `start_station_name` (excl. NAs) and 1306 values for `start_station_id`. In other words, there are some `start_station_id` values that correspond to multiple values of `start_station_name`. This is potentially problematic since it means that the station ids are not unique.
+
+
+
+rides %>%
+  group_by(start_station_name, start_station_id) %>%
+    count() %>% 
+     arrange(desc(start_station_name))
+
+rides %>% summarize(n_distinct(start_station_id))
+
+rides_small <- rides %>% select(start_station_name, start_station_id) %>% 
+                           group_by(start_station_id)
+rides_tiny <- rides %>% select(start_station_name, start_station_id) %>% 
+                            group_by(start_station_id) %>% slice_sample(n = 200)
+```{r}
+df <- within(rides_small, {count <- ave(start_station_name, start_station_id,
+                                 FUN=function(x) length(unique(x)))}) %>% 
+    arrange(desc(count))
+```
+
+```{r}
+df %>% 
+    group_by(start_station_id, count) %>% 
+    distinct(start_station_id, count) %>% 
+    group_by(count) %>% 
+    count()
+    #ggplot(aes(x = count)) + geom_bar()
+```
+    
+rides_small %>% count(name_na = is.na(start_station_id))
+
+with(rides_small, {count <- ave(start_station_name, start_station_id,
+                                FUN=function(x) length(unique(x)))})
+
+test <- data.frame(x = letters[1:10], y = as.character(c(1:5, 5:9)))
+test %>% group_by(x) %>% summarize(n_distinct(y))
+
+rides_small %>%
+  select(start_station_id) %>% 
+      group_by(start_station_id) %>%
+        count() %>%
+          arrange(desc(n))
+
+
+rides %>% group_by(yyyy_mm) %>% skim_without_charts
+rides %>% mutate(missing = is.na(start_station_name)) %>% 
+            group_by(missing) %>% skim_without_charts
+rides %>% mutate(missing = is.na(start_station_name)) %>% 
+            filter(missing == TRUE) %>% distinct(rideable_type)
+rides %>% distinct(start_station_id) %>% top_n(10)
+
+rides %>% mutate(missing = is.na(end_station_name)) %>% 
+            group_by(missing) %>% skim_without_charts
+When `start_station_name` is missing, there is only one `rideable_type` ("electric").
+When `end_station_name` is missing, all three `rideable_type` categories are present.
+When 
+
+rides %>% group_by(yyyy_mm, rideable_type) %>%
+          count() %>%
+          arrange(yyyy_mm) %>% 
+          ggplot(aes(x = yyyy_mm, y = n, fill = rideable_type)) +
+          geom_bar(position="dodge", stat="identity") +
+          theme(axis.text.x = element_text(angle = 90))
+
+rides %>% group_by()
+
+### Data transformation
 
 ## 4. Analyze
 
